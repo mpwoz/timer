@@ -3,6 +3,7 @@ import { AlarmScheduler } from './alarm';
 import { describe, fromSearch, isSoundId, toSearch, type TimerConfig } from './config';
 import { formatDuration } from './duration';
 import { RowList } from './rows';
+import { PRESETS } from './presets';
 import { Schedule, Stopwatch } from './schedule';
 import { DEFAULT_SOUND, SOUNDS, type SoundId } from './sounds';
 
@@ -215,6 +216,16 @@ for (const [id, sound] of Object.entries(SOUNDS)) {
   // Mouse picks shouldn't steal focus from the inputs; arrow keys still work once tabbed in.
   label.addEventListener('mousedown', (e) => e.preventDefault());
   soundPicker.append(label);
+}
+
+// Presets are plain links: following one reloads the page with the config in the URL.
+const presetsNav = el<HTMLElement>('presets');
+for (const preset of PRESETS) {
+  const a = document.createElement('a');
+  a.href = toSearch(preset.config);
+  a.textContent = preset.name;
+  a.title = describe(preset.config);
+  presetsNav.append(a);
 }
 
 const initial = fromSearch(location.search);
