@@ -76,13 +76,35 @@ body[data-state='paused'] .display { opacity: 0.45; }
 
 .row {
   display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.2rem;
   padding: 0.35rem 0.5rem;
   border-radius: 0.9rem;
   border: 2px solid transparent;
 }
 .row.current { background: var(--current); border-color: var(--accent); }
+
+.fields {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+/* Editable label above each interval. Looks like plain text until hovered/focused;
+   click selects the whole name so it can be retyped. The default "Interval N" is a placeholder. */
+.name {
+  width: 100%;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--fg);
+  background: none;
+  border: none;
+  border-radius: 0.35rem;
+  padding: 0.1rem 0.35rem;
+}
+.name::placeholder { color: var(--muted); }
+.name:hover { background: var(--field); }
+.name:focus { outline: none; background: var(--field); box-shadow: inset 0 -2px 0 var(--accent); }
 
 .row label {
   display: flex;
@@ -97,7 +119,7 @@ body[data-state='paused'] .display { opacity: 0.45; }
    space so the input boxes stay evenly spaced. */
 .row:not(:first-child) label span { visibility: hidden; }
 
-.row input {
+.fields input {
   width: 3.2ch;
   font: inherit;
   font-size: clamp(2.75rem, 9vw, 4.5rem);
@@ -109,7 +131,7 @@ body[data-state='paused'] .display { opacity: 0.45; }
   border-radius: 0.6rem;
   padding: 0.1em 0.15em;
 }
-.row input:focus { outline: none; border-color: var(--accent); }
+.fields input:focus { outline: none; border-color: var(--accent); }
 
 .colon {
   font-size: clamp(2.75rem, 9vw, 4.5rem);
@@ -206,6 +228,22 @@ body[data-state='idle'] #pause,
 body[data-state='idle'] #stop { display: none; }
 /* Reset only applies to the stopped (idle) timer. */
 body:not([data-state='idle']) #reset { display: none; }
+/* Interval navigation only makes sense while a multi-interval timer is active. */
+body[data-state='idle'] #prev,
+body[data-state='idle'] #skip,
+body:not(.multi) #prev,
+body:not(.multi) #skip { display: none; }
+/* Push them to the far edges, leaving the core controls centered between. */
+#prev { margin-right: auto; }
+#skip { margin-left: auto; }
+.buttons button.nav {
+  width: 2.6rem;
+  padding: 0.5rem 0;
+  font-size: 0.9rem;
+  line-height: 1;
+  color: var(--muted);
+}
+.buttons button.nav:hover { color: var(--fg); }
 
 .row.invalid input { border-color: var(--bad); animation: shake 0.3s; }
 @keyframes shake {

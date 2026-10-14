@@ -1,13 +1,17 @@
 import { parseDuration } from './duration';
 
 const ROW_HTML = `
-  <label><input class="min" type="text" inputmode="numeric" placeholder="0" aria-label="Minutes" /><span>min</span></label>
-  <span class="colon">:</span>
-  <label><input class="sec" type="text" inputmode="numeric" placeholder="00" aria-label="Seconds" /><span>sec</span></label>
-  <button type="button" class="remove" tabindex="-1" aria-label="Remove interval" title="Remove (Backspace on empty row)">×</button>`;
+  <input class="name" type="text" autocomplete="off" spellcheck="false" aria-label="Interval name" />
+  <div class="fields">
+    <label><input class="min" type="text" inputmode="numeric" placeholder="0" aria-label="Minutes" /><span>min</span></label>
+    <span class="colon">:</span>
+    <label><input class="sec" type="text" inputmode="numeric" placeholder="00" aria-label="Seconds" /><span>sec</span></label>
+    <button type="button" class="remove" tabindex="-1" aria-label="Remove interval" title="Remove (Backspace on empty row)">×</button>
+  </div>`;
 
 const minOf = (row: HTMLElement) => row.querySelector<HTMLInputElement>('.min')!;
 const secOf = (row: HTMLElement) => row.querySelector<HTMLInputElement>('.sec')!;
+const nameOf = (row: HTMLElement) => row.querySelector<HTMLInputElement>('.name')!;
 
 /**
  * The list of min:sec input rows, one per interval.
@@ -24,14 +28,14 @@ export class RowList {
   }
 
   /** Replace all rows with the given intervals (at least one, possibly empty, row). */
-  set(intervals: number[]): void {
+  set(intervals: number[], names: string[] = []): void {
     this.container.replaceChildren();
     if (intervals.length === 0) this.add();
-    for (const ms of intervals) this.add(undefined, ms);
+    else intervals.forEach((ms, i) => this.add(undefined, ms, names[i]));
   }
 
   /** Insert a row (after `after`, or at the end) and return it. */
-  add(after?: HTMLElement, ms?: number): HTMLElement {
+  add(after?: HTMLElement, ms?: number, label?: string): HTMLElement {
     const row = document.createElement('div');
     row.className = 'row';
     row.innerHTML = ROW_HTML;
@@ -42,6 +46,12 @@ export class RowList {
       min.value = String(Math.floor(total / 60));
       sec.value = String(total % 60).padStart(2, '0');
     }
+
+    const name = nameOf(row);
+    if (label) name.value = label;
+    // The name is an optional label; '+' and Backspace shortcuts stay with the time fields.
+    name.addEventListener('focus', () => name.select());
+    name.addEventListener('input', this.onChange);
 
     for (const input of [min, sec]) {
       input.addEventListener('focus', () => input.select());
@@ -65,6 +75,7 @@ export class RowList {
 
     if (after) after.after(row);
     else this.container.append(row);
+    this.renumber();
     this.onChange();
     return row;
   }
@@ -76,7 +87,15 @@ export class RowList {
     row.remove();
     const sec = secOf(neighbor);
     sec.focus();
+    this.renumber();
     this.onChange();
+  }
+
+  /** Keep the default "Interval N" placeholders in step with each row's position. */
+  private renumber(): void {
+    this.rows.forEach((row, i) => {
+      nameOf(row).placeholder = `Interval ${i + 1}`;
+    });
   }
 
   focus(row: HTMLElement = this.rows[0]): void {
@@ -85,11 +104,13 @@ export class RowList {
   }
 
   /**
-   * Parse all rows. Fully blank rows are skipped; `used[i]` is the row element for `intervals[i]`.
-   * Rows with unparseable content are reported in `invalid`.
+   * Parse all rows. Fully blank rows are skipped; `used[i]` is the row element for `intervals[i]`,
+   * and `names[i]` its custom label ('' when left at the default). Rows with unparseable content
+   * are reported in `invalid`.
    */
-  read(): { intervals: number[]; used: HTMLElement[]; invalid: HTMLElement[] } {
+  read(): { intervals: number[]; names: string[]; used: HTMLElement[]; invalid: HTMLElement[] } {
     const intervals: number[] = [];
+    const names: string[] = [];
     const used: HTMLElement[] = [];
     const invalid: HTMLElement[] = [];
     for (const row of this.rows) {
@@ -100,9 +121,10 @@ export class RowList {
       if (ms === null) invalid.push(row);
       else {
         intervals.push(ms);
+        names.push(nameOf(row).value.trim());
         used.push(row);
       }
     }
-    return { intervals, used, invalid };
+    return { intervals, names, used, invalid };
   }
 }

@@ -79,4 +79,10 @@ export class Stopwatch {
     this.frozen = 0;
     this.state = 'idle';
   }
+
+  /** Jump elapsed time forward by `delta` ms (used to skip to the next interval). */
+  advance(delta: number): void {
+    if (this.state === 'running') this.anchor -= delta;
+    else if (this.state === 'paused') this.frozen += delta;
+  }
 }

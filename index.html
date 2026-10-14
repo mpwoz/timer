@@ -21,15 +21,17 @@
         </fieldset>
 
         <div class="buttons">
+          <button type="button" id="prev" class="nav" tabindex="-1" title="Previous interval (P)" aria-label="Previous interval">◀</button>
           <button type="submit" tabindex="-1">Start</button>
           <button type="button" id="reset" class="danger" tabindex="-1" title="Reset to a blank timer">Reset</button>
           <button type="button" id="pause" tabindex="-1">Pause</button>
           <button type="button" id="stop" tabindex="-1">Stop</button>
+          <button type="button" id="skip" class="nav" tabindex="-1" title="Next interval (N)" aria-label="Next interval">▶</button>
         </div>
       </form>
 
       <p class="hints">
-        <kbd>Tab</kbd> next field · <kbd>+</kbd> add interval ·<kbd>Enter</kbd> start / restart · <kbd>Space</kbd> pause · <kbd>Esc</kbd> stop / reset
+        <kbd>Tab</kbd> next field · <kbd>+</kbd> add interval ·<kbd>Enter</kbd> start / restart · <kbd>Space</kbd> pause · <kbd>P</kbd>/<kbd>N</kbd> prev / next interval · <kbd>Esc</kbd> stop / reset
       </p>
     </main>
     <script type="module" src="/src/main.ts"></script>
