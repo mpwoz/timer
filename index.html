@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Timer</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏲</text></svg>" />
+  </head>
+  <body data-state="idle">
+    <main>
+      <div id="display" class="display" aria-live="off">0:00</div>
+      <div id="status" class="status"></div>
+
+      <form id="form" class="entry" autocomplete="off">
+        <label>
+          <input id="min" type="text" inputmode="numeric" placeholder="0" aria-label="Minutes" autofocus />
+          <span>min</span>
+        </label>
+        <span class="colon">:</span>
+        <label>
+          <input id="sec" type="text" inputmode="numeric" placeholder="00" aria-label="Seconds" />
+          <span>sec</span>
+        </label>
+
+        <div class="buttons">
+          <button type="submit" tabindex="-1">Start</button>
+          <button type="button" id="pause" tabindex="-1">Pause</button>
+          <button type="button" id="stop" tabindex="-1">Stop</button>
+        </div>
+      </form>
+
+      <p class="hints">
+        <kbd>Tab</kbd> next field · <kbd>Enter</kbd> start / restart · <kbd>Space</kbd> pause · <kbd>Esc</kbd> stop
+      </p>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
