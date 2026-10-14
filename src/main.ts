@@ -1,17 +1,10 @@
 import './style.css';
 import { AlarmScheduler } from './alarm';
-import { formatDuration, parseDuration } from './duration';
+import { describe, fromSearch, isSoundId, toSearch, type TimerConfig } from './config';
+import { formatDuration } from './duration';
+import { RowList } from './rows';
 import { Schedule, Stopwatch } from './schedule';
-import { DEFAULT_SOUND, type SoundId } from './sounds';
-
-/**
- * Everything that defines a timer. Kept plain and serializable: this is what
- * URL params and saved presets will encode later.
- */
-export interface TimerConfig {
-  intervals: number[]; // ms, cycled in order
-  sound: SoundId;
-}
+import { DEFAULT_SOUND, SOUNDS, type SoundId } from './sounds';
 
 const HORIZON_MS = 3 * 60_000; // how far ahead sounds are queued on the audio clock
 const TICK_MS = 100;
@@ -21,29 +14,44 @@ const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as
 const display = el<HTMLDivElement>('display');
 const statusLine = el<HTMLDivElement>('status');
 const form = el<HTMLFormElement>('form');
-const minInput = el<HTMLInputElement>('min');
-const secInput = el<HTMLInputElement>('sec');
+const soundPicker = el<HTMLFieldSetElement>('sounds');
+const addBtn = el<HTMLButtonElement>('add');
 const pauseBtn = el<HTMLButtonElement>('pause');
 const stopBtn = el<HTMLButtonElement>('stop');
 
 const watch = new Stopwatch();
 const alarm = new AlarmScheduler();
-let active: { config: TimerConfig; schedule: Schedule } | null = null;
+const rows = new RowList(el('rows'), onEdit);
+let active: { config: TimerConfig; schedule: Schedule; rows: HTMLElement[] } | null = null;
 let queuedUntil = 0; // elapsed ms up to which sounds have been queued
 let lastElapsed = 0;
 let ringTimeout: number | undefined;
 
-function readConfig(): TimerConfig | null {
-  const ms = parseDuration(minInput.value, secInput.value);
-  return ms ? { intervals: [ms], sound: DEFAULT_SOUND } : null;
+function selectedSound(): SoundId {
+  const value = soundPicker.querySelector<HTMLInputElement>('input:checked')?.value ?? '';
+  return isSoundId(value) ? value : DEFAULT_SOUND;
+}
+
+/** The config described by the inputs, or null (with the offending rows) if it isn't valid. */
+function readConfig(): { config: TimerConfig | null; used: HTMLElement[]; invalid: HTMLElement[] } {
+  const { intervals, used, invalid } = rows.read();
+  const ok = intervals.length > 0 && invalid.length === 0;
+  return { config: ok ? { intervals, sound: selectedSound() } : null, used, invalid };
+}
+
+/** Inputs changed: keep the URL bookmarkable and the idle display current. */
+function onEdit(): void {
+  const { config } = readConfig();
+  if (config) history.replaceState(null, '', toSearch(config));
+  render();
 }
 
 function start(): void {
-  const config = readConfig();
-  if (!config) return rejectInput();
+  const { config, used, invalid } = readConfig();
+  if (!config) return rejectInput(invalid.length ? invalid : rows.rows);
   alarm.unlock();
   alarm.cancelAll();
-  active = { config, schedule: new Schedule(config.intervals) };
+  active = { config, schedule: new Schedule(config.intervals), rows: used };
   watch.start();
   queuedUntil = 0;
   lastElapsed = 0;
@@ -67,7 +75,20 @@ function stop(): void {
   alarm.cancelAll();
   active = null;
   render();
-  focusInputs();
+  rows.focus();
+}
+
+function onSoundPicked(): void {
+  const sound = selectedSound();
+  alarm.unlock();
+  alarm.playNow(sound);
+  if (active && watch.state !== 'idle') {
+    // Requeue upcoming alarms with the new sound.
+    active.config.sound = sound;
+    alarm.cancelAll();
+    queuedUntil = watch.elapsed();
+  }
+  onEdit();
 }
 
 function tick(): void {
@@ -108,34 +129,52 @@ function render(): void {
   document.body.dataset.state = state;
 
   if (!active || state === 'idle') {
-    const ms = parseDuration(minInput.value, secInput.value);
-    display.textContent = formatDuration(ms ?? 0);
-    statusLine.textContent = '';
-    document.title = 'Timer';
+    const { config } = readConfig();
+    display.textContent = formatDuration(config?.intervals[0] ?? 0);
+    statusLine.textContent = config && config.intervals.length > 1 ? describe(config) : '';
+    document.title = config ? `${describe(config)} · Timer` : 'Timer';
     pauseBtn.textContent = 'Pause';
+    highlight(null);
     return;
   }
 
-  const { remaining, completed } = active.schedule.position(watch.elapsed());
+  const { remaining, completed, index } = active.schedule.position(watch.elapsed());
+  const n = active.config.intervals.length;
   const time = formatDuration(remaining);
-  const every = active.config.intervals.map(formatDuration).join(' → ');
+  const paused = state === 'paused' ? 'Paused · ' : '';
   display.textContent = time;
-  statusLine.textContent = `${state === 'paused' ? 'Paused · ' : ''}every ${every} · round ${completed + 1}`;
-  document.title = `${state === 'paused' ? '⏸ ' : ''}${time} · Timer`;
+  statusLine.textContent = `${paused}${n > 1 ? `interval ${index + 1} of ${n} · ` : ''}round ${Math.floor(completed / n) + 1}`;
+  document.title = `${state === 'paused' ? '⏸ ' : ''}${time} · ${describe(active.config)}`;
   pauseBtn.textContent = state === 'paused' ? 'Resume' : 'Pause';
+  highlight(active.rows[index] ?? null);
 }
 
-function rejectInput(): void {
-  form.classList.remove('invalid');
-  void form.offsetWidth; // restart the animation
-  form.classList.add('invalid');
-  focusInputs();
+function highlight(row: HTMLElement | null): void {
+  for (const r of rows.rows) r.classList.toggle('current', r === row);
 }
 
-function focusInputs(): void {
-  minInput.focus();
-  minInput.select();
+function rejectInput(bad: HTMLElement[]): void {
+  for (const row of bad) {
+    row.classList.remove('invalid');
+    void row.offsetWidth; // restart the animation
+    row.classList.add('invalid');
+  }
+  rows.focus(bad[0]);
 }
+
+// --- setup ---
+
+for (const [id, sound] of Object.entries(SOUNDS)) {
+  const label = document.createElement('label');
+  label.innerHTML = `<input type="radio" name="sound" value="${id}" /><span>${sound.label}</span>`;
+  // Mouse picks shouldn't steal focus from the inputs; arrow keys still work once tabbed in.
+  label.addEventListener('mousedown', (e) => e.preventDefault());
+  soundPicker.append(label);
+}
+
+const initial = fromSearch(location.search);
+soundPicker.querySelector<HTMLInputElement>(`input[value="${initial.sound}"]`)!.checked = true;
+rows.set(initial.intervals);
 
 // --- wiring ---
 
@@ -144,15 +183,15 @@ form.addEventListener('submit', (e) => {
   start();
 });
 
-for (const input of [minInput, secInput]) {
-  input.addEventListener('focus', () => input.select());
-  input.addEventListener('input', () => watch.state === 'idle' && render());
-}
+// Click fires for mouse, label clicks and arrow-key selection, so every pick previews.
+soundPicker.addEventListener('click', (e) => {
+  if ((e.target as HTMLElement).matches('input')) onSoundPicked();
+});
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     e.preventDefault();
-    if (watch.state === 'idle') focusInputs();
+    if (watch.state === 'idle') rows.focus();
     else stop();
   } else if (e.key === ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
     e.preventDefault();
@@ -160,6 +199,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+addBtn.addEventListener('click', () => rows.focus(rows.add()));
 pauseBtn.addEventListener('click', togglePause);
 stopBtn.addEventListener('click', stop);
 // Keep keyboard focus in the inputs when buttons are clicked/tapped.
@@ -170,4 +210,4 @@ for (const btn of document.querySelectorAll('button')) {
 document.addEventListener('visibilitychange', tick);
 window.setInterval(tick, TICK_MS);
 render();
-focusInputs();
+rows.focus();

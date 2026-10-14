@@ -13,15 +13,12 @@
       <div id="status" class="status"></div>
 
       <form id="form" class="entry" autocomplete="off">
-        <label>
-          <input id="min" type="text" inputmode="numeric" placeholder="0" aria-label="Minutes" autofocus />
-          <span>min</span>
-        </label>
-        <span class="colon">:</span>
-        <label>
-          <input id="sec" type="text" inputmode="numeric" placeholder="00" aria-label="Seconds" />
-          <span>sec</span>
-        </label>
+        <div id="rows" class="rows"></div>
+        <button type="button" id="add" class="add" tabindex="-1" title="Add interval (+)" aria-label="Add interval">+</button>
+
+        <fieldset id="sounds" class="sounds">
+          <legend>Sound</legend>
+        </fieldset>
 
         <div class="buttons">
           <button type="submit" tabindex="-1">Start</button>
@@ -31,7 +28,7 @@
       </form>
 
       <p class="hints">
-        <kbd>Tab</kbd> next field · <kbd>Enter</kbd> start / restart · <kbd>Space</kbd> pause · <kbd>Esc</kbd> stop
+        <kbd>Tab</kbd> next field · <kbd>+</kbd> add interval ·<kbd>Enter</kbd> start / restart · <kbd>Space</kbd> pause · <kbd>Esc</kbd> stop
       </p>
     </main>
     <script type="module" src="/src/main.ts"></script>

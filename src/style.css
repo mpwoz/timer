@@ -6,6 +6,7 @@
   --border: #d4d2cc;
   --accent: #2f6fdb;
   --ring: #ffd84d;
+  --current: #e3ecfb;
   --bad: #d33;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
@@ -19,6 +20,7 @@
     --border: #36363c;
     --accent: #6d9eff;
     --ring: #6b5a12;
+    --current: #1d2a44;
   }
 }
 
@@ -61,13 +63,28 @@ body[data-state='paused'] .display { opacity: 0.45; }
 
 .entry {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
   gap: 0.5rem;
 }
 
-.entry label {
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.9rem;
+  border: 2px solid transparent;
+}
+.row.current { background: var(--current); border-color: var(--accent); }
+
+.row label {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -75,11 +92,13 @@ body[data-state='paused'] .display { opacity: 0.45; }
   font-size: 0.9rem;
   gap: 0.25rem;
 }
+/* Field labels only on the first row. */
+.row:not(:first-child) label span { display: none; }
 
-.entry input {
+.row input {
   width: 3.2ch;
   font: inherit;
-  font-size: clamp(3rem, 10vw, 5rem);
+  font-size: clamp(2.75rem, 9vw, 4.5rem);
   font-variant-numeric: tabular-nums;
   text-align: center;
   color: var(--fg);
@@ -88,20 +107,78 @@ body[data-state='paused'] .display { opacity: 0.45; }
   border-radius: 0.6rem;
   padding: 0.1em 0.15em;
 }
-.entry input:focus { outline: none; border-color: var(--accent); }
+.row input:focus { outline: none; border-color: var(--accent); }
 
 .colon {
-  font-size: clamp(3rem, 10vw, 5rem);
+  font-size: clamp(2.75rem, 9vw, 4.5rem);
   line-height: 1.3;
   color: var(--muted);
 }
 
+.remove {
+  align-self: center;
+  width: 2rem;
+  height: 2rem;
+  font: inherit;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.remove:hover { color: var(--fg); background: var(--field); }
+.row:only-child .remove { visibility: hidden; }
+
+.add {
+  width: 2.5rem;
+  height: 2.5rem;
+  font: inherit;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: 2px dashed var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.add:hover { color: var(--fg); border-color: var(--muted); }
+
+.sounds {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem;
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+.sounds legend {
+  float: left;
+  align-self: center;
+  margin-right: 0.5rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.sounds label { cursor: pointer; }
+.sounds input { position: absolute; opacity: 0; pointer-events: none; }
+.sounds span {
+  display: inline-block;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.sounds input:checked + span { color: var(--fg); border-color: var(--accent); background: var(--current); }
+.sounds input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 .buttons {
-  flex-basis: 100%;
   display: flex;
   justify-content: center;
   gap: 0.5rem;
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
 }
 .buttons button {
   font: inherit;
@@ -114,9 +191,9 @@ body[data-state='paused'] .display { opacity: 0.45; }
 }
 .buttons button[type='submit'] { background: var(--accent); border-color: var(--accent); color: #fff; }
 body[data-state='idle'] #pause,
-body[data-state='idle'] #stop { visibility: hidden; }
+body[data-state='idle'] #stop { display: none; }
 
-.entry.invalid input { border-color: var(--bad); animation: shake 0.3s; }
+.row.invalid input { border-color: var(--bad); animation: shake 0.3s; }
 @keyframes shake {
   25% { transform: translateX(-6px); }
   75% { transform: translateX(6px); }
