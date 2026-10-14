@@ -18,6 +18,7 @@ const soundPicker = el<HTMLFieldSetElement>('sounds');
 const addBtn = el<HTMLButtonElement>('add');
 const pauseBtn = el<HTMLButtonElement>('pause');
 const stopBtn = el<HTMLButtonElement>('stop');
+const resetBtn = el<HTMLButtonElement>('reset');
 
 const watch = new Stopwatch();
 const alarm = new AlarmScheduler();
@@ -74,6 +75,15 @@ function stop(): void {
   watch.stop();
   alarm.cancelAll();
   active = null;
+  render();
+  rows.focus();
+}
+
+/** Clear the inputs back to a single blank interval and the default sound. */
+function reset(): void {
+  rows.set([]);
+  soundPicker.querySelector<HTMLInputElement>(`input[value="${DEFAULT_SOUND}"]`)!.checked = true;
+  history.replaceState(null, '', location.pathname);
   render();
   rows.focus();
 }
@@ -191,7 +201,7 @@ soundPicker.addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     e.preventDefault();
-    if (watch.state === 'idle') rows.focus();
+    if (watch.state === 'idle') reset();
     else stop();
   } else if (e.key === ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
     e.preventDefault();
@@ -202,6 +212,7 @@ document.addEventListener('keydown', (e) => {
 addBtn.addEventListener('click', () => rows.focus(rows.add()));
 pauseBtn.addEventListener('click', togglePause);
 stopBtn.addEventListener('click', stop);
+resetBtn.addEventListener('click', reset);
 // Keep keyboard focus in the inputs when buttons are clicked/tapped.
 for (const btn of document.querySelectorAll('button')) {
   btn.addEventListener('mousedown', (e) => e.preventDefault());

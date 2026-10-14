@@ -1,2 +1,5 @@
 node_modules
 dist
+
+# Playwright MCP browser-testing output (screenshots, page snapshots, console logs)
+.playwright-mcp/

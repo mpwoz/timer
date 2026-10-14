@@ -8,7 +8,7 @@ A keyboard-first repeating timer. Type `7` <kbd>Tab</kbd> `30` <kbd>Enter</kbd> 
 | <kbd>Backspace</kbd> | (in an empty row) remove it |
 | <kbd>Enter</kbd> | start / restart with the current values |
 | <kbd>Space</kbd> | pause / resume |
-| <kbd>Esc</kbd> | stop |
+| <kbd>Esc</kbd> | stop (or, when already stopped, reset to a blank timer) |
 
 The minutes field also takes `7:30` or `1:00:00`. Multiple rows cycle in order (e.g. 15:00 then 5:00, repeat);
 the current row is highlighted while running. Pick a sound from the row of options (each previews when picked;
@@ -24,6 +24,21 @@ npm run dev      # http://localhost:5173
 npm test
 npm run build    # -> dist/
 ```
+
+### Viewing it in a browser (incl. Playwright / automated agents)
+
+Always load the app from the Vite dev server (`npm run dev`), **not** from a
+`file://` path or a plain static file server:
+
+- Playwright blocks the `file://` protocol outright.
+- `index.html` loads `src/main.ts` as an ES module. A static server (e.g.
+  `python -m http.server`) serves `.ts` with the wrong MIME type, so the browser
+  refuses the module and the page renders as dead, unstyled HTML with no working
+  buttons. Vite transpiles the TS on the fly, so the module loads correctly.
+
+So: run `npm run dev`, then open the exact `Local:` URL it prints. Vite starts on
+`http://localhost:5173` but **falls back to the next free port** (5174, …) if that
+one is taken — read the port from the server output rather than assuming 5173.
 
 Pushing to `main` deploys to GitHub Pages via `.github/workflows/deploy.yml`
 (repo Settings → Pages → Source: **GitHub Actions**).
